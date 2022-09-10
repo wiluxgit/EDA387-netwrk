@@ -16,6 +16,12 @@
 #include <limits.h>
 #include <unistd.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+
+#include <arpa/inet.h>
+
 //--//////////////////////////////////////////////////////////////////////////
 //--    local declarations          ///{{{1///////////////////////////////////
 
@@ -54,8 +60,7 @@ int main( int aArgc, char* aArgv[] )
 	const size_t kHostNameMaxLength = HOST_NAME_MAX+1;
 	char localHostName[kHostNameMaxLength];
 
-	if( -1 == gethostname( localHostName, kHostNameMaxLength ) )
-	{
+	if( -1 == gethostname( localHostName, kHostNameMaxLength ) ){
 		perror( "gethostname(): " );
 		return 1;
 	}
@@ -63,8 +68,36 @@ int main( int aArgc, char* aArgv[] )
 	// Print the initial message
 	printf( "Resolving `%s' from `%s':\n", remoteHostName, localHostName );
 
-	// TODO : add your code here
+	const addrinfo hints = addrinfo{
+		.ai_family = AF_INET,
+		.ai_socktype = SOCK_STREAM,
+		.ai_protocol = IPPROTO_TCP
+	};
+	addrinfo* res;
 
+	int err = getaddrinfo(remoteHostName, NULL, &hints, &res);
+	if(err != 0){
+		printf("%s\n",gai_strerror(err));
+		return 1;
+	}
+	
+	addrinfo* currentAddrinfo = res;
+	do {		
+		sockaddr* sockAddr = currentAddrinfo->ai_addr;
+		assert( AF_INET == sockAddr->sa_family );
+		sockaddr_in* inAddr = (sockaddr_in*)sockAddr; // cast to sockaddr_in*
+		// Now we can get at the port and address data!
+		int port = inAddr->sin_port;
+		uint32_t ipNumber = inAddr->sin_addr.s_addr;
+
+		char strIp[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &ipNumber, strIp, INET_ADDRSTRLEN);
+
+		printf("%s\n", strIp);
+		currentAddrinfo = currentAddrinfo->ai_next;
+	} while (currentAddrinfo != NULL);
+	freeaddrinfo(res);
+	
 	// Ok, we're done. Return success.
 	return 0;
 }
