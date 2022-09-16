@@ -183,14 +183,14 @@ int main( int argc, char* argv[] )
 		// and add them in readfds or writefds.
 		// NOTE: How to know if a socket should be added in readfds or writefds? Check the "state"
 		// field of ConnectionData for that socket.
-		for (int i = 0; i<connections.size(); i++){
-			if (connections[i].state == eConnStateReceiving){
-				max_fd = std::max(max_fd, connections[i].sock);
-				FD_SET(connections[i].sock, &readfds);
+		for(ConnectionData cd : connections){
+			if (cd.state == eConnStateReceiving){
+				max_fd = std::max(max_fd, cd.sock);
+				FD_SET(cd.sock, &readfds);
 
-			}else if (connections[i].state == eConnStateSending){
-				max_fd = std::max(max_fd, connections[i].sock);
-				FD_SET(connections[i].sock, &writefds);
+			}else if (cd.state == eConnStateSending){
+				max_fd = std::max(max_fd, cd.sock);
+				FD_SET(cd.sock, &writefds);
 			}
 		}
 		
@@ -242,12 +242,10 @@ int main( int argc, char* argv[] )
 #			endif
 
 			// initialize connection data
-			ConnectionData connData;
-			memset( &connData, 0, sizeof(connData) );
-
-			connData.sock = clientfd;
-			connData.state = eConnStateReceiving;
-
+			ConnectionData connData = ConnectionData{
+				.state = eConnStateReceiving,
+				.sock = clientfd,
+			};
 
 			// TODO: add connData in your data structure so that you can keep track of that socket.
 			connections.push_back(connData);
@@ -275,9 +273,7 @@ int main( int argc, char* argv[] )
 				if (!ret){
 					connections[i].sock = -1;
 				}
-			}
-
-			
+			}			
 		}
 		connections.erase(
 				std::remove_if(
