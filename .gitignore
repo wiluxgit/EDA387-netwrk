@@ -31,3 +31,6 @@
 *.out
 *.app
 resolve
+lab3/client-simple
+.vscode/settings.json
+lab3/server-io-multiplexing-skeleton
